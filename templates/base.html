@@ -41,8 +41,10 @@
     </div>
     <nav class="navbar navbar-dark navbar-expand-sm fixed-top" style="background-color:steelblue;">
         <div class="container">
-            <a href="{{ url_for('index') }}" class="nav-home-btn" aria-label="Home">&#x13080;</a>
-            <span class="navbar-brand ms-2">Seba-Seba Egyptian Dictionary</span>
+            <div class="navbar-home d-flex align-items-center">
+                <a href="{{ url_for('index') }}" class="nav-home-btn" aria-label="Home">&#x13080;</a>
+                <span class="navbar-brand ms-2">Seba-Seba Egyptian Dictionary</span>
+            </div>
             <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

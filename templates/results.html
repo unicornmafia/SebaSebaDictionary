@@ -30,7 +30,7 @@
 {% include "pagination.html" %}
 {% endif %}
 
-<table class="table table-hover table-responsive-lg">
+<table class="table table-hover results-table">
     <thead style="width: 100%">
         <tr>
             <th>Hieroglyphs</th>
@@ -42,7 +42,7 @@
     <tbody style="width:100%">
         {% for result in results %}
         <tr>
-            <td>
+            <td data-label="Hieroglyphs">
                 {% if display_formatted %}
                     {% set gardiner = result.get('GardinerSigns', '') %}
                     {% set mdc = result.get('ManuelDeCodage') %}
@@ -69,12 +69,12 @@
                     <span class="large_text large-text">{{ convert_gardiner(result.get('GardinerSigns', '')) }}</span>
                 {% endif %}
             </td>
-            <td>{{ prettify_transliteration(result.get('Transliteration', '')) }}</td>
-            <td>{{ result.get('GardinerSigns', '') }}</td>
+            <td data-label="Transliteration">{{ prettify_transliteration(result.get('Transliteration', '')) }}</td>
+            <td data-label="Gardiner Signs">{{ result.get('GardinerSigns', '') }}</td>
             {% set translations = result.get('Translations', []) %}
             {% if translations %}
-            <td>
-                <table class="table table-responsive-lg" style="width: 100%">
+            <td data-label="Translations">
+                <table class="table translations-table" style="width: 100%">
                     <tbody style="width: 100%">
                         {% for translation in translations %}
                         <tr>

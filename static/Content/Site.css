@@ -1,4 +1,4 @@
-﻿.nav-home-btn {
+.nav-home-btn {
     font-family: Hieroglyphic;
     font-size: 1.8em;
     line-height: 1;
@@ -7,10 +7,6 @@
     padding: 4px 8px;
     border-radius: 6px;
     transition: background-color 0.2s;
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
 }
 .nav-home-btn:hover {
     background-color: rgba(255, 255, 255, 0.25);
@@ -18,29 +14,37 @@
 }
 
 body {
-    padding-top: 50px;
+    padding-top: 56px;
     padding-bottom: 20px;
-    position:absolute;
-    height:100%;
-    display:table;
-    top: 0;
-    left: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 /* Set padding to keep content from hitting the edges */
 .body-content {
     padding-left: 15px;
     padding-right: 15px;
-    height: 100%;
-    display:table;
     width: 100%;
 }
 
-form {
-    display: table-cell;
-    vertical-align: middle;
-    width: 100%;
+.navbar .navbar-nav .nav-link {
+    white-space: nowrap;
+}
 
+@media (max-width: 575.98px) {
+    .navbar .navbar-home {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .navbar .navbar-brand {
+        font-size: 1rem;
+        margin-right: 0;
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 /* Override the default bootstrap behavior where horizontal description lists 
@@ -70,10 +74,12 @@ textarea {
     color: white !important;
     border-color: steelblue !important;
 }
+@media (hover: hover) {
 .search_config:hover {
     background-color: #a8cfe0 !important;
     border-color: #a8cfe0 !important;
     color: white !important;
+}
 }
 .btn-check:checked + .search_config {
     background-color: #2255a4 !important;
@@ -127,9 +133,152 @@ textarea {
 
 .search_div .input-group {
     width: 340px;
+    max-width: 100%;
+    flex-wrap: nowrap;
 }
 
 .toggle-label {
     padding: 1em 1em 0 0.5em;
     display: flex;
+}
+
+/* ---------- Stargate search page ----------
+   Everything inside the gate is sized in percentages / container units of the
+   gate itself, so the inner circle can never drift off the ring's centre. The
+   gate image is cropped square around the event horizon, whose diameter is ~77%
+   of the image; the inner disc is 78% (11% inset) to cover its soft edge. */
+.home-page .body-content {
+    min-height: calc(100vh - 76px);
+    min-height: calc(100dvh - 76px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.stargate-form {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.stargate {
+    --gate: min(600px, calc(100vw - 16px), calc(100vh - 80px));
+    --gate: min(600px, calc(100vw - 16px), calc(100svh - 80px));
+    width: max(var(--gate), min(300px, calc(100vw - 16px)));
+    aspect-ratio: 1 / 1;
+    position: relative;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: url('../Resources/stargate_square.jpg') center / 100% 100% no-repeat;
+    container-type: inline-size;
+}
+
+.stargate-inner {
+    position: absolute;
+    inset: 11%;
+    border-radius: 50%;
+    background: url('../Resources/space.jpg') center / cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stargate-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(4px, 1.4cqw, 10px);
+    width: 100%;
+    font-size: clamp(11px, 2.3cqw, 14px);
+    color: white;
+}
+
+.stargate-title {
+    color: white;
+    font-weight: bold;
+    font-family: 'Papyrus', fantasy;
+    font-size: clamp(1.6rem, 9.3cqw, 3.5rem);
+    line-height: 1.1;
+    margin: 0;
+}
+
+.stargate .search_div {
+    justify-content: center;
+}
+
+.stargate .search_config {
+    font-size: 1em;
+    margin: 0 2px;
+    padding: 0.35em 0.7em;
+}
+
+.stargate .search_div .input-group {
+    width: min(340px, 62cqw);
+}
+
+/* Keep inputs at 16px so iOS Safari doesn't zoom the page on focus */
+.stargate .form-control,
+.stargate .select2-container {
+    font-size: 16px;
+}
+
+.stargate .search-submit {
+    font-size: 1em;
+}
+
+.stargate .toggle-label {
+    padding: 0;
+    align-items: center;
+    gap: 0.75em;
+}
+
+.stargate .custom-switch {
+    margin: 0;
+}
+
+.stargate #sources-btn {
+    font-size: 1em;
+}
+
+.label-short { display: none; }
+
+@container (max-width: 440px) {
+    .label-full { display: none; }
+    .label-short { display: inline; }
+    .stargate .search-submit .search-text { display: none; }
+}
+
+/* ---------- Results tables: stack into cards on phones ---------- */
+@media (max-width: 767.98px) {
+    .results-table > thead {
+        display: none;
+    }
+    .results-table > tbody > tr {
+        display: block;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0.5rem 0;
+    }
+    .results-table > tbody > tr > td {
+        display: block;
+        border: none;
+        padding: 0.25rem 0.5rem;
+    }
+    .results-table > tbody > tr > td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6c757d;
+    }
+    .results-table .translations-table td:first-child {
+        width: auto !important;
+        white-space: normal;
+    }
+    .results-table .translations-table td {
+        padding: 0.25rem;
+    }
 }

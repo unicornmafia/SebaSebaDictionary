@@ -9,6 +9,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   mongo-seed:
     image: mongo:7
@@ -32,6 +33,7 @@ services:
       MONGO_URI: mongodb://mongo:27017
       MONGO_DB: MiddleEgyptianDictionary
       SECRET_KEY: change-me-in-prod
+    restart: unless-stopped
 
 volumes:
   mongo_data:

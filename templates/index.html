@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Search{% endblock %}
-{% block body_class %}jumbo_image img-fluid{% endblock %}
+{% block body_class %}jumbo_image home-page{% endblock %}
 
 {% block extra_head %}
 <script src="{{ url_for('static', filename='Scripts/searchform.js') }}"></script>
@@ -17,9 +17,50 @@
     box-sizing: border-box;
     color: white;
     box-shadow: 0 0 40px rgba(70, 130, 180, 0.6);
+    container-type: inline-size;
 }
+#sourcesDialog .sources-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 14%;
+    box-sizing: border-box;
+    position: relative;
+    font-size: clamp(12px, 2.9cqw, 16px);
+}
+#sourcesDialog .sources-close {
+    position: absolute;
+    top: 17%;
+    right: 17%;
+    background: none;
+    border: none;
+    color: #a0c4e8;
+    font-size: 1.6em;
+    cursor: pointer;
+    line-height: 1;
+    padding: 6px;
+}
+#sourcesDialog h5 {
+    color: white;
+    margin-bottom: 0.8em;
+    font-family: 'Papyrus', fantasy;
+    font-size: 1.25em;
+    letter-spacing: .04em;
+}
+#sourcesDialog .sources-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4em 1em;
+    width: 100%;
+    margin-bottom: 1.1em;
+}
+#sourcesDialog .form-check { margin: 0; min-height: 0; }
 #sourcesDialog .form-check-label { color: #d0e8ff; }
 #sourcesDialog .form-check-input { cursor: pointer; }
+#sourcesDialog .btn-sm { font-size: 0.9em; }
 #sourcesDialog .btn-outline-secondary {
     color: #a0c4e8;
     border-color: #4a7ab5;
@@ -28,6 +69,18 @@
     background: #1a3a6a;
     color: white;
 }
+/* Fallback when the viewport is too short for a circle (e.g. phone landscape) */
+#sourcesDialog.compact {
+    border-radius: 20px;
+    height: auto !important;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+}
+#sourcesDialog.compact .sources-panel {
+    padding: 20px;
+    height: auto;
+}
+#sourcesDialog.compact .sources-close { top: 10px; right: 10px; }
 </style>
 {% endblock %}
 
@@ -45,7 +98,7 @@
                 + 'left:' + ((c + 0.5) / cols * 100) + '%;'
                 + 'top:' + ((r + 0.5) / rows * 100) + '%;'
                 + 'font-family:Hieroglyphic;'
-                + 'font-size:48px;'
+                + 'font-size:min(48px, calc(min(100vw / 16, 100vh / 12) * 0.6));'
                 + 'color:white;'
                 + 'opacity:1;'
                 + 'transform:translate(-50%,-50%);'
@@ -59,50 +112,48 @@
 <span class="invisible eg-A100"></span>
 
 {% if error %}
-<label class="alert-danger" style="padding: 15px; border-radius: 5%; margin-top: 50px;">{{ error }}</label>
+<label class="alert-danger" style="padding: 15px; border-radius: 5%; margin: 10px 0;">{{ error }}</label>
 {% endif %}
 
-<form action="{{ url_for('submit') }}" method="post">
-    <div style="align-items:center; justify-content:center; display:flex; margin-top:-3px;">
-        <div class="img_overlay" style="display:flex; align-items:center; justify-content:center; border-radius:50%; aspect-ratio:1/1; width:600px; background-image:url('{{ url_for('static', filename='Resources/stargate_round.jpg') }}'); background-size:cover; background-position:calc(50% + 8px) calc(50% - 8px);">
-            <div id="stargate-inner" style="display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:50%; aspect-ratio:1/1; width:480px; background-image:url('{{ url_for('static', filename='Resources/space.jpg') }}'); background-size:cover; background-position:center; margin-top:-6px;">
-            <h3 style="color:white; font-weight:bold; font-family:'Papyrus', fantasy; font-size:3.5rem;">Search</h3>
+<form action="{{ url_for('submit') }}" method="post" class="stargate-form">
+    <div class="stargate img_overlay">
+        <div id="stargate-inner" class="stargate-inner">
+            <div class="stargate-content">
+            <h3 class="stargate-title">Search</h3>
             <div class="search_div">
                 <div class="btn-group">
                     <input type="radio" class="btn-check" name="Type" value="transliteration" id="type-mdc" autocomplete="off" checked onchange="ChangeTextbox(0);">
-                    <label class="btn btn-outline-primary search_config" for="type-mdc">Manual De Codage</label>
+                    <label class="btn btn-outline-primary search_config" for="type-mdc"><span class="label-full">Manual De Codage</span><span class="label-short">MdC</span></label>
 
                     <input type="radio" class="btn-check" name="Type" value="translation" id="type-english" autocomplete="off" onchange="ChangeTextbox(0);">
                     <label class="btn btn-outline-primary search_config" id="translationradio" for="type-english">English</label>
 
                     <input type="radio" class="btn-check" name="Type" value="gardiner" id="type-hieroglyphs" autocomplete="off" onchange="ChangeTextbox(1);">
-                    <label class="btn btn-outline-primary search_config" for="type-hieroglyphs">Hieroglyphs</label>
+                    <label class="btn btn-outline-primary search_config" for="type-hieroglyphs"><span class="label-full">Hieroglyphs</span><span class="label-short">Glyphs</span></label>
                 </div>
             </div>
 
             <div class="search_div">
                 <div class="input-group">
-                    <input type="text" name="Query" class="form-control" placeholder="Search..." id="regular-input" autocapitalize="none">
+                    <input type="text" name="Query" class="form-control" placeholder="Search..." id="regular-input" autocapitalize="none" autocorrect="off" spellcheck="false">
                     <select class="js-example-basic-multiple" multiple="multiple" onchange="SelectClick()"></select>
-                    <button class="btn btn-outline-dark search-submit" type="submit" value="Submit">
+                    <button class="btn btn-outline-dark search-submit" type="submit" value="Submit" aria-label="Search">
                         <i class="fas fa-search"></i>
-                        Search
+                        <span class="search-text">Search</span>
                     </button>
                     <input type="text" name="SignQuery" id="SignQuery" style="display:none;">
                 </div>
             </div>
 
-            <div class="row" style="display: table">
-                <div class="toggle-label" style="color:white;">
-                    Exact Match:
-                    <div class="custom-switch custom-switch-xs" style="margin-left: 3em;">
-                        <input class="custom-switch-input" id="exactmatchcheck" name="ExactMatch" value="true" checked type="checkbox">
-                        <label class="custom-switch-btn" for="exactmatchcheck"></label>
-                    </div>
+            <div class="toggle-label">
+                Exact Match:
+                <div class="custom-switch custom-switch-xs">
+                    <input class="custom-switch-input" id="exactmatchcheck" name="ExactMatch" value="true" checked type="checkbox">
+                    <label class="custom-switch-btn" for="exactmatchcheck"></label>
                 </div>
             </div>
 
-            <div class="row" style="display:table; margin-top:10px;">
+            <div>
                 <button type="button" class="btn btn-outline-light btn-sm" id="sources-btn">
                     <i class="fas fa-filter"></i> <span id="sources-btn-label">Sources</span>
                 </button>
@@ -116,13 +167,12 @@
 
 <!-- Source filter overlay — circular panel pinned over stargate inner ring -->
 <div id="sources-backdrop" style="display:none; position:fixed; inset:0; z-index:1055; background:rgba(0,0,15,0.75);">
-<div id="sourcesDialog">
+<div id="sourcesDialog" role="dialog" aria-modal="true" aria-label="Sources">
     <!-- inner wrapper padded to stay within the circle's inscribed square -->
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; padding: 80px; box-sizing:border-box; position:relative;">
-        <button type="button" id="sources-dialog-close" aria-label="Close"
-            style="position:absolute; top:90px; right:90px; background:none; border:none; color:#a0c4e8; font-size:1.3rem; cursor:pointer; line-height:1; padding:0;">&times;</button>
-        <h5 style="color:white; margin-bottom:14px; font-family:'Papyrus',fantasy; font-size:1.2rem; letter-spacing:.04em;">Sources</h5>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px 20px; width:100%; margin-bottom:18px;">
+    <div class="sources-panel">
+        <button type="button" id="sources-dialog-close" class="sources-close" aria-label="Close">&times;</button>
+        <h5>Sources</h5>
+        <div class="sources-grid">
             <div class="form-check">
                 <input class="form-check-input source-cb" type="checkbox" value="4" id="src-4">
                 <label class="form-check-label" for="src-4">Faulkner</label>
@@ -217,18 +267,38 @@
         if (inp) inp.value = selected.join(',');
     }
 
-    function openDialog() {
+    function positionDialog() {
+        var vw = document.documentElement.clientWidth;
+        var vh = window.innerHeight;
         var inner = document.getElementById('stargate-inner');
-        if (inner) {
-            var r = inner.getBoundingClientRect();
-            // position panel so its center matches the stargate inner ring center
-            dlg.style.top  = (r.top  + r.height / 2 - 240 + window.scrollY) + 'px';
-            dlg.style.left = (r.left + r.width  / 2 - 240 + window.scrollX) + 'px';
+        var r = inner ? inner.getBoundingClientRect()
+                      : { left: vw / 2, top: vh / 2, width: 0, height: 0 };
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        // Cover the inner ring, but never get too small to use or bigger than the screen.
+        // The backdrop is position:fixed, so these are viewport coordinates.
+        var d = Math.min(Math.max(r.width, Math.min(440, vw - 16)), vw - 16, vh - 16);
+        if (d < 340) {
+            // Not enough room for a usable circle: fall back to a rounded panel
+            dlg.classList.add('compact');
+            var w = Math.min(420, vw - 16);
+            dlg.style.width = w + 'px';
+            dlg.style.height = '';
+            dlg.style.left = ((vw - w) / 2) + 'px';
+            dlg.style.top = Math.max(8, (vh - dlg.offsetHeight) / 2) + 'px';
+            return;
         }
+        dlg.classList.remove('compact');
+        dlg.style.width = dlg.style.height = d + 'px';
+        dlg.style.left = Math.min(Math.max(8, cx - d / 2), vw - d - 8) + 'px';
+        dlg.style.top  = Math.min(Math.max(8, cy - d / 2), vh - d - 8) + 'px';
+    }
+
+    function openDialog() {
         syncCheckboxes(load());
         var allChecked = document.querySelectorAll('.source-cb:not(:checked)').length === 0;
         document.getElementById('toggle-all-btn').textContent = allChecked ? 'Deselect All' : 'Select All';
         backdrop.style.display = 'block';
+        positionDialog();
     }
 
     function closeDialog() { backdrop.style.display = 'none'; }
@@ -259,6 +329,11 @@
     // Click outside panel (on backdrop) to close
     backdrop.addEventListener('click', function (e) {
         if (e.target === backdrop) closeDialog();
+    });
+
+    // Keep the panel over the ring on rotation / resize
+    window.addEventListener('resize', function () {
+        if (backdrop.style.display !== 'none') positionDialog();
     });
 
     // Esc key to close

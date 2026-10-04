@@ -77,18 +77,22 @@ var updatePageEntries = function () {
             var row = document.createElement("tr");
 
             var r1 = document.createElement("td");
+            r1.dataset.label = "Hieroglyphs";
             r1.innerHTML = `<canvas class="res">${item.Res != null ? item.Res : item.ManuelDeCodage}</canvas>`;
             row.appendChild(r1);
 
             var r2 = document.createElement("td");
+            r2.dataset.label = "Transliteration";
             r2.innerText = item.Transliteration;
             row.appendChild(r2);
 
             var r3 = document.createElement("td");
+            r3.dataset.label = "Gardiner Signs";
             r3.innerText = item.GardinerSigns;
             row.appendChild(r3);
 
             var r4 = document.createElement("td");
+            r4.dataset.label = "Translations";
             r4.innerHTML = item.Translations.translation;
             row.appendChild(r4);
 
