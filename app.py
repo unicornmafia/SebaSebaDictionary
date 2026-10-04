@@ -682,10 +682,13 @@ def results():
 def image():
     key = request.args.get("key", "")
     image_key = key.replace("AA", "J").replace("Aa", "J")
-    tiff_path = os.path.join(RESOURCES_PATH, f"{image_key}.tiff")
-    if not os.path.exists(tiff_path):
+    for ext in ("tiff", "jpg"):
+        path = os.path.join(RESOURCES_PATH, f"{image_key}.{ext}")
+        if os.path.exists(path):
+            break
+    else:
         return "", 404
-    img = Image.open(tiff_path)
+    img = Image.open(path)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
@@ -760,6 +763,12 @@ def faulkner():
 def scripts_compat(filename):
     """Serve Scripts/ at the root path, as the original JS fetches from /Scripts/."""
     return send_from_directory(os.path.join(BASE_DIR, "static", "Scripts"), filename)
+
+
+@app.route("/Search/Image")
+def image_compat():
+    """Alias used by gardiner-signs.json: /Search/Image?key=X"""
+    return image()
 
 
 @app.route("/Search/FaulknerEntries")
