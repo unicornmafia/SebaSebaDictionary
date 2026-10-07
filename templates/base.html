@@ -39,21 +39,28 @@
         <span class="outsidescreen_elem hiaux">&#35;</span>
         <span class="outsidescreen_elem hinotes">&#35;</span>
     </div>
-    <nav class="navbar navbar-dark navbar-expand-sm fixed-top" style="background-color:steelblue;">
-        <div class="container">
+    <nav class="navbar navbar-dark fixed-top" style="background-color:steelblue;">
+        <div class="container-fluid flex-nowrap">
             <div class="navbar-home d-flex align-items-center">
                 <a href="{{ url_for('index') }}" class="nav-home-btn" aria-label="Home">&#x13080;</a>
                 <span class="navbar-brand ms-2">Seba-Seba Egyptian Dictionary</span>
             </div>
-            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                <ul class="navbar-nav">
-                    <li class="nav-item"><a href="{{ url_for('index') }}" class="nav-link">Search</a></li>
-                    <li class="nav-item"><a href="{{ url_for('gardiner_signs') }}" class="nav-link">Sign List</a></li>
-                    <li class="nav-item"><a href="{{ url_for('sources') }}" class="nav-link">Sources</a></li>
-                </ul>
+            <div class="navbar-links">
+                <a href="{{ url_for('index') }}" class="nav-link" title="Search" aria-label="Search">
+                    <i class="fas fa-search"></i><span class="nav-text">Search</span>
+                </a>
+                <a href="{{ url_for('gardiner_signs') }}" class="nav-link" title="Sign List" aria-label="Sign List">
+                    <i class="fas fa-list-ul"></i><span class="nav-text">Sign List</span>
+                </a>
+            </div>
+            <div class="navbar-links navbar-links-end">
+                <a href="https://sebasesh.marshbot.com" class="nav-link" target="_blank" rel="noopener noreferrer"
+                   title="Seba-Sesh Hieroglyphic Editor (opens in a new tab)" aria-label="Seba-Sesh Editor">
+                    <i class="fas fa-pen-nib"></i><span class="nav-text">Editor</span>
+                </a>
+                <a href="{{ url_for('sources') }}" class="nav-link" title="About" aria-label="About">
+                    <i class="fas fa-info-circle"></i><span class="nav-text">About</span>
+                </a>
             </div>
         </div>
     </nav>

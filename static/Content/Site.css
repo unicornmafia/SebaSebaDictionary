@@ -27,23 +27,58 @@ body {
     width: 100%;
 }
 
-.navbar .navbar-nav .nav-link {
+/* Nav links: icon + label, styled like the Seba-Sesh editor's title bar */
+.navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.navbar-links-end {
+    margin-left: auto;
+}
+.navbar-links .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
     white-space: nowrap;
 }
+.navbar-links .nav-link:hover,
+.navbar-links .nav-link:focus-visible {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+.navbar-links .nav-text {
+    margin-left: 0.25rem;
+}
 
-@media (max-width: 575.98px) {
+/* Narrow screens: icons only, and the title truncates to make room */
+@media (max-width: 767.98px) {
+    .navbar-links .nav-text {
+        display: none;
+    }
+    .navbar-links .nav-link {
+        padding: 6px 9px;
+    }
     .navbar .navbar-home {
         flex: 1 1 0;
         min-width: 0;
     }
     .navbar .navbar-brand {
-        font-size: 1rem;
-        margin-right: 0;
+        margin-right: 0.5rem;
         flex: 1 1 0;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .navbar .navbar-brand {
+        font-size: 1rem;
     }
 }
 
