@@ -70,7 +70,7 @@
                 {% endif %}
             </td>
             <td data-label="Transliteration">{{ prettify_transliteration(result.get('Transliteration', '')) }}</td>
-            <td data-label="Gardiner Signs">{{ result.get('GardinerSigns', '') }}</td>
+            <td data-label="Gardiner Signs" class="res-cell"><span class="res-text">{{ gardiner_res_text(result.get('GardinerSigns') or '') }}</span><button type="button" class="copy-res" title="Copy RES" aria-label="Copy RES"><i class="far fa-copy"></i></button></td>
             {% set translations = result.get('Translations', []) %}
             {% if translations %}
             <td data-label="Translations">

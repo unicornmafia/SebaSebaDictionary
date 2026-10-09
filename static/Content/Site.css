@@ -207,13 +207,21 @@ textarea {
     position: relative;
     flex-shrink: 0;
     border-radius: 50%;
-    background: url('../Resources/stargate_square.jpg') center / 100% 100% no-repeat;
     container-type: inline-size;
+}
+
+/* Ring drawn above the space background so its inner edge stays crisp */
+.stargate::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url('../Resources/eye_of_ra_fusion_1d.svg') center / 100% 100% no-repeat;
+    pointer-events: none;
 }
 
 .stargate-inner {
     position: absolute;
-    inset: 11%;
+    inset: 10.8%;
     border-radius: 50%;
     background: url('../Resources/space.jpg') center / cover no-repeat;
     display: flex;
@@ -284,6 +292,33 @@ textarea {
     .label-full { display: none; }
     .label-short { display: inline; }
     .stargate .search-submit .search-text { display: none; }
+}
+
+/* ---------- Copy RES button (Gardiner Signs column) ---------- */
+.copy-res {
+    border: none;
+    background: none;
+    padding: 0 0.3rem;
+    margin-left: 0.25rem;
+    color: #6c757d;
+    opacity: 0;
+    transition: opacity 0.15s;
+    cursor: pointer;
+}
+.res-cell:hover .copy-res,
+.copy-res:focus-visible,
+.copy-res.copied {
+    opacity: 1;
+}
+.copy-res:hover {
+    color: steelblue;
+}
+.copy-res.copied {
+    color: #198754;
+}
+/* Touch screens have no hover, so keep the button visible */
+@media (hover: none) {
+    .copy-res { opacity: 0.7; }
 }
 
 /* ---------- Results tables: stack into cards on phones ---------- */

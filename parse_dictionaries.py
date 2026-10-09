@@ -132,40 +132,54 @@ def parse_vygus(pdf_path: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # DICKSON 2006 parser
 # ---------------------------------------------------------------------------
-# Line format:
+# Entry format:
 #   [<translit>] <gloss> {<GARD> <GARD> ...}
+#
+# Pages are two-column, and entries often wrap onto following lines, columns
+# or pages. Extracting a whole page interleaves the two columns line by line,
+# which glues unrelated entries together, so each column is extracted on its
+# own (below the running header) and all columns are parsed as one stream.
+# A new entry is a "[" at the start of a line; glosses may contain brackets
+# of their own, e.g. "Pakhet (She who scratches [a lion goddess] )".
 
+_DICKSON_HEADER = "Dictionary of Middle Egyptian"
+_DICKSON_HEADER_BOTTOM = 55   # running header sits at top=37 on every page
 _DICKSON_ENTRY = re.compile(
-    r'^\[([^\]]+)\]\s+(.+?)\s+\{([^}]+)\}\s*$'
+    r'^\[([^\]\n]+)\][ \t]*((?:(?!\n\[)[^{}])+?)\s*\{([^{}]+)\}', re.M
 )
+_DICKSON_SIGN = re.compile(r'^' + _GARD_TOKEN + r'[A-Za-z]*$')
 
 
 def parse_dickson(pdf_path: str) -> list[dict]:
-    entries = []
+    columns = []
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            text = page.extract_text()
-            if not text:
-                continue
-            for line in text.splitlines():
-                line = line.strip()
-                m = _DICKSON_ENTRY.match(line)
-                if not m:
-                    continue
-                translit = m.group(1).strip()
-                gloss    = m.group(2).strip()
-                gard_raw = m.group(3).strip()
-                # codes are space-separated inside { }
-                gardiner_signs = " ".join(gard_raw.split())
-                if translit and gloss:
-                    entries.append({
-                        "transliteration": translit,
-                        "gardiner_signs":  gardiner_signs,
-                        "translation":     gloss,
-                        "pos":             None,
-                        "source":          DICKSON,
-                    })
-    print(f"  Dickson: parsed {len(entries)} entries", file=sys.stderr)
+            header = page.crop((0, 0, page.width, _DICKSON_HEADER_BOTTOM)).extract_text() or ""
+            if not header.startswith(_DICKSON_HEADER):
+                continue  # front matter
+            mid = page.width / 2
+            for x0, x1 in ((0, mid), (mid, page.width)):
+                columns.append(
+                    page.crop((x0, _DICKSON_HEADER_BOTTOM, x1, page.height)).extract_text() or ""
+                )
+
+    entries = []
+    skipped = 0
+    for m in _DICKSON_ENTRY.finditer("\n".join(columns)):
+        translit, gloss, gard_raw = (" ".join(g.split()) for g in m.groups())
+        if not all(_DICKSON_SIGN.match(tok) for tok in gard_raw.split()):
+            skipped += 1
+            continue
+        if translit and gloss:
+            entries.append({
+                "transliteration": translit,
+                "gardiner_signs":  gard_raw,
+                "translation":     gloss,
+                "pos":             None,
+                "source":          DICKSON,
+            })
+    print(f"  Dickson: parsed {len(entries)} entries ({skipped} skipped with non-sign codes)",
+          file=sys.stderr)
     return entries
 
 

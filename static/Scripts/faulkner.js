@@ -88,7 +88,18 @@ var updatePageEntries = function () {
 
             var r3 = document.createElement("td");
             r3.dataset.label = "Gardiner Signs";
-            r3.innerText = item.GardinerSigns;
+            r3.className = "res-cell";
+            var r3text = document.createElement("span");
+            r3text.className = "res-text";
+            r3text.innerText = item.GardinerRes;
+            r3.appendChild(r3text);
+            var r3copy = document.createElement("button");
+            r3copy.type = "button";
+            r3copy.className = "copy-res";
+            r3copy.title = "Copy RES";
+            r3copy.setAttribute("aria-label", "Copy RES");
+            r3copy.innerHTML = '<i class="far fa-copy"></i>';
+            r3.appendChild(r3copy);
             row.appendChild(r3);
 
             var r4 = document.createElement("td");

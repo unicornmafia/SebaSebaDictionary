@@ -33,7 +33,7 @@ DEFAULT_PAGE_SIZE = 50
 MAX_RESULTS = 500
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RESOURCES_PATH = os.path.join(BASE_DIR, "static", "Resources")
+GLYPHS_PATH = os.path.join(BASE_DIR, "static", "Resources", "glyphs")
 UNKNOWN_GLYPHS_PATH = os.path.join(BASE_DIR, "static", "Content", "unknown_glyphs.txt")
 SEARCH_CACHE_DIR = os.path.join(BASE_DIR, "search_cache")
 
@@ -264,6 +264,37 @@ def gardiner_to_res(gardiner_signs: str) -> str:
     return '-'.join(tokens)
 
 
+_MDC_TEXT_PART_RE = re.compile(r'[A-Za-z0-9]+|[-:*&]')
+
+
+def gardiner_res_text(gardiner_signs: str) -> str:
+    """Plain MdC string for displaying as text, e.g. 'A8 A1 B1 Z2' -> 'A8-A1*B1:Z2'.
+
+    Only sign codes and the - : * operators are kept. The renderer's
+    substitutions (bracketed sep/fix options, insert(...), empty) are not
+    applied, and anything that isn't a valid sign code is dropped.
+    Unlike gardiner_to_res, signs the RES renderer doesn't know are kept, since
+    the text should list every sign in the entry.
+    """
+    key = ' '.join(gardiner_signs.upper().split())
+    mdc = GARDINER_TO_MDC.get(key) or '-'.join(gardiner_signs.split())
+    out = []
+    op = None
+    for part in _MDC_TEXT_PART_RE.findall(mdc):
+        if part in '-:*&':
+            if out:
+                op = ':' if part == '&' else part
+            continue
+        sign = _normalize_gardiner_token(part)
+        if not sign:
+            continue
+        if out:
+            out.append(op or '-')
+        out.append(sign)
+        op = None
+    return ''.join(out)
+
+
 def gardiner_render_items(gardiner_signs: str) -> list:
     """Return render items for a Gardiner sign sequence.
 
@@ -305,7 +336,7 @@ def gardiner_render_items(gardiner_signs: str) -> list:
                     continue
             # Image fallback — only if the tiff actually exists
             tiff_key = tok.replace("AA", "J").replace("Aa", "J")
-            tiff_path = os.path.join(RESOURCES_PATH, f"{tiff_key}.tiff")
+            tiff_path = os.path.join(GLYPHS_PATH, f"{tiff_key}.tiff")
             if os.path.exists(tiff_path):
                 _flush()
                 items.append({'kind': 'img', 'key': tok})
@@ -675,6 +706,7 @@ def results():
         datasource_color=datasource_color,
         gardiner_to_res=gardiner_to_res,
         gardiner_render_items=gardiner_render_items,
+        gardiner_res_text=gardiner_res_text,
     )
 
 
@@ -683,7 +715,7 @@ def image():
     key = request.args.get("key", "")
     image_key = key.replace("AA", "J").replace("Aa", "J")
     for ext in ("tiff", "jpg"):
-        path = os.path.join(RESOURCES_PATH, f"{image_key}.{ext}")
+        path = os.path.join(GLYPHS_PATH, f"{image_key}.{ext}")
         if os.path.exists(path):
             break
     else:
@@ -721,6 +753,7 @@ def faulkner_entries():
         {
             "Transliteration": r.get("Transliteration", ""),
             "GardinerSigns": r.get("GardinerSigns", ""),
+            "GardinerRes": gardiner_res_text(r.get("GardinerSigns") or ""),
             "Res": r.get("Res"),
             "ManuelDeCodage": r.get("ManuelDeCodage", ""),
             "Translations": r.get("Translations", {}),
