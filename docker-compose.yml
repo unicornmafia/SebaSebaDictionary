@@ -22,7 +22,8 @@ services:
       mongorestore --host mongo --db MiddleEgyptianDictionary /dump/MiddleEgyptianDictionary
     restart: "no"
 
-  web:
+  sebaseba:
+    image: 127.0.0.1:5000/sebaseba:latest
     build: .
     ports:
       - "5001:5001"
