@@ -22,7 +22,12 @@ from PIL import Image
 from pymongo import MongoClient
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
+_secret_key_file = os.environ.get("SECRET_KEY_FILE")  # e.g. a swarm secret
+if _secret_key_file:
+    with open(_secret_key_file) as f:
+        app.secret_key = f.read().strip()
+else:
+    app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
 
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("MONGO_DB", "MiddleEgyptianDictionary")
