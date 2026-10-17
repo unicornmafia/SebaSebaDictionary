@@ -4,17 +4,22 @@
 // Queue for chunked canvas rendering
 ResWeb.renderQueue = [];
 ResWeb.isRendering = false;
-ResWeb.CHUNK_SIZE = 5; // Render 5 canvases per frame
+// Render for at most this many ms per frame, so clicks and typing stay responsive
+ResWeb.FRAME_BUDGET_MS = 8;
 
 // Make canvas for all hieroglyphic (chunked to avoid blocking).
+// Safe to call again after adding content: canvases already queued are skipped.
 function ResWeb() {
 	var canvass = document.getElementsByTagName("canvas");
 	for (var i = 0; i < canvass.length; i++) {
 		var canvas = canvass[i];
-		if (canvas.className.match(/\bres\b/)) 
+		if (canvas.className.match(/\bres\b/) && !canvas.resQueued) {
+			canvas.resQueued = true;
 			ResWeb.queueRender(canvas);
+		}
 	}
-	ResWeb.processQueue();
+	if (!ResWeb.isRendering)
+		ResWeb.processQueue();
 }
 
 // Queue a canvas for rendering
@@ -23,30 +28,24 @@ function(canvas) {
 	ResWeb.renderQueue.push(canvas);
 };
 
-// Process render queue in chunks using requestAnimationFrame
+// Process render queue in time-limited chunks using requestAnimationFrame
 ResWeb.processQueue =
 function() {
 	if (ResWeb.renderQueue.length === 0) {
 		ResWeb.isRendering = false;
 		return;
 	}
-	
+
 	ResWeb.isRendering = true;
-	
+
 	requestAnimationFrame(function() {
-		// Process a chunk of canvases
-		var chunk = ResWeb.renderQueue.splice(0, ResWeb.CHUNK_SIZE);
-		
-		for (var i = 0; i < chunk.length; i++) {
-			ResWeb.makeSometime(chunk[i]);
-		}
-		
-		// Continue processing if more items remain
-		if (ResWeb.renderQueue.length > 0) {
-			ResWeb.processQueue();
-		} else {
-			ResWeb.isRendering = false;
-		}
+		var start = performance.now();
+		do {
+			ResWeb.makeSometime(ResWeb.renderQueue.shift());
+		} while (ResWeb.renderQueue.length > 0 &&
+				performance.now() - start < ResWeb.FRAME_BUDGET_MS);
+
+		ResWeb.processQueue();
 	});
 };
 
