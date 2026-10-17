@@ -6,6 +6,7 @@ import sys
 import traceback
 import unicodedata
 import uuid
+from datetime import datetime, timezone
 
 from flask import (
     Flask,
@@ -33,6 +34,8 @@ MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("MONGO_DB", "MiddleEgyptianDictionary")
 ENTRIES_COLLECTION = os.environ.get("ENTRIES_COLLECTION", "DictionaryEntry")
 KEYWORDS_COLLECTION = os.environ.get("KEYWORDS_COLLECTION", "KeywordSearch")
+SEARCH_CACHE_COLLECTION = os.environ.get("SEARCH_CACHE_COLLECTION", "SearchCache")
+SEARCH_CACHE_TTL_SECONDS = 24 * 60 * 60
 
 DEFAULT_PAGE_SIZE = 50
 MAX_RESULTS = 500
@@ -40,7 +43,6 @@ MAX_RESULTS = 500
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GLYPHS_PATH = os.path.join(BASE_DIR, "static", "Resources", "glyphs")
 UNKNOWN_GLYPHS_PATH = os.path.join(BASE_DIR, "static", "Content", "unknown_glyphs.txt")
-SEARCH_CACHE_DIR = os.path.join(BASE_DIR, "search_cache")
 
 # ---------------------------------------------------------------------------
 # Unknown glyphs
@@ -535,27 +537,41 @@ def conduct_search(search_type: str, query: str, sign_query: str, exact: bool,
     return results
 
 # ---------------------------------------------------------------------------
-# Result cache (file-backed, keyed by UUID stored in session)
+# Result cache (in MongoDB, keyed by UUID stored in session)
+#
+# Kept in the database rather than on local disk so every app replica sees
+# it: with several replicas behind the proxy, POST /submit and the following
+# GET /results can be served by different containers.
 # ---------------------------------------------------------------------------
 
+_search_cache_ready = False
+
+
+def search_cache_collection():
+    global _search_cache_ready
+    col = get_db()[SEARCH_CACHE_COLLECTION]
+    if not _search_cache_ready:
+        # Mongo deletes cached searches once they are older than the TTL
+        col.create_index("createdAt", expireAfterSeconds=SEARCH_CACHE_TTL_SECONDS)
+        _search_cache_ready = True
+    return col
+
+
 def _save_results(results: list) -> str:
-    os.makedirs(SEARCH_CACHE_DIR, exist_ok=True)
     search_id = str(uuid.uuid4())
-    path = os.path.join(SEARCH_CACHE_DIR, f"{search_id}.json")
-    # Strip MongoDB ObjectId to string
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(results, f, default=str)
+    search_cache_collection().insert_one({
+        "_id": search_id,
+        "createdAt": datetime.now(timezone.utc),
+        "results": results,
+    })
     return search_id
 
 
 def _load_results(search_id: str) -> list | None:
     if not search_id:
         return None
-    path = os.path.join(SEARCH_CACHE_DIR, f"{search_id}.json")
-    if not os.path.exists(path):
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    doc = search_cache_collection().find_one({"_id": search_id}, {"results": 1})
+    return doc["results"] if doc else None
 
 # ---------------------------------------------------------------------------
 # DataSource helpers
