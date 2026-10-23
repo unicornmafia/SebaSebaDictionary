@@ -352,3 +352,9 @@ textarea {
         padding: 0.25rem;
     }
 }
+
+/* Example sentence shown under TLA translations */
+.translation-example {
+    font-size: 0.85em;
+    color: #6c757d;
+}

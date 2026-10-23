@@ -213,6 +213,10 @@
                 <input class="form-check-input source-cb" type="checkbox" value="7" id="src-7">
                 <label class="form-check-label" for="src-7">Hoch</label>
             </div>
+            <div class="form-check">
+                <input class="form-check-input source-cb" type="checkbox" value="13" id="src-13">
+                <label class="form-check-label" for="src-13">TLA</label>
+            </div>
         </div>
         <div style="display:flex; justify-content:space-between; width:100%; gap:10px;">
             <button type="button" class="btn btn-outline-secondary btn-sm" id="toggle-all-btn">Deselect All</button>
@@ -224,22 +228,31 @@
 
 <script>
 (function () {
-    var ALL = [4, 1, 0, 2, 6, 9, 5, 8, 10, 7];
+    var ALL = [4, 1, 0, 2, 6, 9, 5, 8, 10, 7, 13];
     var STORAGE_KEY = 'sebaseba-sources';
     var backdrop = document.getElementById('sources-backdrop');
     var dlg = document.getElementById('sourcesDialog');
 
+    // Sources offered before the selection was saved with its source list
+    var LEGACY_ALL = [4, 1, 0, 2, 6, 9, 5, 8, 10, 7];
+
+    // Saved as {selected, known}. Sources added since the selection was saved
+    // aren't in "known", so they start out selected like on a first visit.
     function load() {
         try {
-            var stored = localStorage.getItem(STORAGE_KEY);
-            if (!stored) return ALL.slice();
-            var a = JSON.parse(stored);
-            return Array.isArray(a) && a.length ? a : ALL.slice();
+            var stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            var selected = Array.isArray(stored) ? stored : stored && stored.selected;
+            var known = Array.isArray(stored) ? LEGACY_ALL : stored && stored.known;
+            if (!Array.isArray(selected) || !selected.length || !Array.isArray(known)) return ALL.slice();
+            ALL.forEach(function (s) {
+                if (known.indexOf(s) === -1 && selected.indexOf(s) === -1) selected.push(s);
+            });
+            return selected.filter(function (s) { return ALL.indexOf(s) !== -1; });
         } catch (e) { return ALL.slice(); }
     }
 
     function save(selected) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selected)); } catch (e) {}
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ selected: selected, known: ALL })); } catch (e) {}
     }
 
     function syncCheckboxes(selected) {
@@ -309,6 +322,12 @@
     updateButton(current);
 
     document.getElementById('sources-btn').onclick = openDialog;
+
+    // The results page's "Filters" button links here with ?sources to open the selector
+    if (new URLSearchParams(location.search).has('sources')) {
+        history.replaceState(null, '', location.pathname);
+        openDialog();
+    }
 
     document.getElementById('sources-dialog-close').onclick = closeDialog;
 

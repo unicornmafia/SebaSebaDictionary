@@ -21,7 +21,7 @@
 <div class="alert alert-info py-2 mb-3 d-flex align-items-center gap-2" role="alert">
     <i class="fas fa-filter"></i>
     <span>Filtered to: <strong>{{ source_filter_labels | join(', ') }}</strong></span>
-    <a href="{{ url_for('index') }}" class="ms-auto btn btn-sm btn-outline-secondary">Clear filter</a>
+    <a href="{{ url_for('index', sources=1) }}" class="ms-auto btn btn-sm btn-outline-secondary"><i class="fas fa-filter"></i> Filters</a>
 </div>
 {% endif %}
 
@@ -92,7 +92,11 @@
                                     {% else %}
                                         {% set label = display %}
                                     {% endif %}
+                                    {% if m.get('Url') %}
+                                    <a href="{{ m.get('Url') }}" target="_blank" rel="noopener noreferrer" title="View in the Thesaurus Linguae Aegyptiae" class="badge text-decoration-none" style="background-color: {{ color }}; color: #333;">{{ label | safe }} <i class="fas fa-external-link-alt"></i></a>
+                                    {% else %}
                                     <span class="badge" style="background-color: {{ color }}; color: #333;">{{ label | safe }}</span>
+                                    {% endif %}
                                 {% endfor %}
                             </td>
                             {% endif %}
@@ -106,6 +110,10 @@
                                     {{ translation.get('translation', '') | safe }}
                                 {% else %}
                                     {{ translation.get('translation', '') }}
+                                {% endif %}
+                                {% set example = translation.get('Example') %}
+                                {% if example %}
+                                    <div class="translation-example">e.g. <i>{{ example.transliteration }}</i> &ldquo;{{ example.translation }}&rdquo;</div>
                                 {% endif %}
                             </td>
                         </tr>

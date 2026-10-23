@@ -590,6 +590,7 @@ _DATASOURCE_NAMES = {
     10: "evans",
     11: "faulkner_revised",
     12: "vygus_2012",
+    13: "tla",
 }
 _DATASOURCE_DISPLAY = {
     "dickson": "Dickson",
@@ -604,6 +605,7 @@ _DATASOURCE_DISPLAY = {
     "evans": "Evans",
     "faulkner_revised": "Faulkner (Revised)",
     "vygus_2012": "Vygus (2012)",
+    "tla": "TLA",
 }
 _DATASOURCE_COLORS = {
     "faulkner": "lightblue",
@@ -618,6 +620,7 @@ _DATASOURCE_COLORS = {
     "evans": "aliceblue",
     "faulkner_revised": "lightcyan",
     "vygus_2012": "plum",
+    "tla": "wheat",
 }
 
 

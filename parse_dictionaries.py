@@ -41,6 +41,7 @@ GARDINER_GRAMMAR  = 9
 EVANS             = 10
 FAULKNER_REVISED  = 11
 VYGUS_2012       = 12
+TLA              = 13
 
 PDFS_DIR = os.path.join(os.path.dirname(__file__), "pdfs")
 
