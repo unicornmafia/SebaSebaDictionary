@@ -19,7 +19,7 @@ from flask import (
     session,
     url_for,
 )
-from PIL import Image
+from PIL import Image, ImageOps
 from pymongo import MongoClient
 
 app = Flask(__name__)
@@ -228,17 +228,44 @@ GARDINER_TO_MDC = _load_gardiner_to_mdc()
 
 
 def _build_res_known_signs() -> set:
-    """Extract the set of sign codes known to the RES library from res_signinfo.js."""
-    path = os.path.join(BASE_DIR, "static", "Scripts", "res", "res_signinfo.js")
+    """Extract the set of sign codes the RES library can draw: the signs in
+    res_signinfo.js (NewGardiner font) plus ResContext.extendedPoints in
+    res_points.js (ExtendedGardiner font, e.g. D115)."""
+    res_dir = os.path.join(BASE_DIR, "static", "Scripts", "res")
+    signs = set()
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(os.path.join(res_dir, "res_signinfo.js"), "r", encoding="utf-8") as f:
+            signs |= set(re.findall(r'^([A-Za-z0-9]+):', f.read(), re.MULTILINE))
+        with open(os.path.join(res_dir, "res_points.js"), "r", encoding="utf-8") as f:
             content = f.read()
-        return set(re.findall(r'^([A-Za-z0-9]+):', content, re.MULTILINE))
+        block = re.search(r'ResContext\.extendedPoints = \{(.*?)\};', content, re.DOTALL)
+        if block:
+            signs |= set(re.findall(r'^\s*([A-Za-z0-9]+):', block.group(1), re.MULTILINE))
     except OSError:
-        return set()
+        pass
+    return signs
 
 
 RES_KNOWN_SIGNS = _build_res_known_signs()
+
+
+def _load_unicode_signs() -> dict:
+    """Sign code -> Unicode hieroglyph, incl. the Unicode 16 extended list (see build_unicode_signs.py)."""
+    path = os.path.join(BASE_DIR, "static", "unicode_signs.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except OSError:
+        return {}
+
+
+UNICODE_SIGNS = _load_unicode_signs()
+
+
+def unicode_sign(code: str) -> str | None:
+    """Unicode hieroglyph for a Gardiner code ('D115' -> '𓥈'), or None."""
+    normalized = _normalize_gardiner_token(code)
+    return UNICODE_SIGNS.get(normalized.upper()) if normalized else None
 
 
 def _normalize_gardiner_token(tok: str) -> str | None:
@@ -302,23 +329,33 @@ def gardiner_res_text(gardiner_signs: str) -> str:
     return ''.join(out)
 
 
+def _split_top_level(res: str) -> list[str]:
+    """Split a RES string at the '-' between top-level groups, leaving
+    '-' inside brackets (e.g. insert[...](A,B)) alone."""
+    groups, depth, start = [], 0, 0
+    for i, ch in enumerate(res):
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        elif ch == "-" and depth == 0:
+            groups.append(res[start:i])
+            start = i + 1
+    groups.append(res[start:])
+    return [g for g in groups if g]
+
+
 def gardiner_render_items(gardiner_signs: str) -> list:
     """Return render items for a Gardiner sign sequence.
 
-    When all signs are in the MdC grouping lookup, returns a single canvas item
-    with proper stacking/grouping operators. Otherwise splits into canvas runs
-    and image fallbacks per sign.
+    Signs the RES fonts can draw go into canvas items, keeping the MdC
+    grouping (e.g. X1:V28) from the lookup. A group containing a sign RES
+    can't draw is split into single signs, and that sign becomes a Unicode
+    character or, failing that, an image.
     """
     key = ' '.join(gardiner_signs.upper().split())
     mdc = GARDINER_TO_MDC.get(key)
 
-    if mdc:
-        res_str = _mdc_to_res(mdc)
-        codes = _RES_CODE_RE.findall(res_str)
-        if codes and all(c in RES_KNOWN_SIGNS for c in codes):
-            return [{'kind': 'canvas', 'value': res_str}]
-
-    # Fallback: per-sign canvas runs with image fallbacks for unknown signs
     items: list = []
     canvas_run: list = []
 
@@ -327,27 +364,45 @@ def gardiner_render_items(gardiner_signs: str) -> list:
             items.append({'kind': 'canvas', 'value': '-'.join(canvas_run)})
             canvas_run.clear()
 
-    for tok in gardiner_signs.split():
+    def _add_sign(tok: str):
         normalized = _normalize_gardiner_token(tok)
         if normalized is None:
-            continue
+            return
         if normalized in RES_KNOWN_SIGNS:
             canvas_run.append(normalized)
-        else:
-            # Try the MdC translation dict for a renderable equivalent (e.g. Y1V→Y1a)
-            v = _MDC_TRANSLATION_DIC.get(tok.upper())
-            if v:
-                tcodes = _RES_CODE_RE.findall(v)
-                if tcodes and all(c in RES_KNOWN_SIGNS for c in tcodes):
-                    canvas_run.append(v)
-                    continue
-            # Image fallback — only if the tiff actually exists
-            tiff_key = tok.replace("AA", "J").replace("Aa", "J")
-            tiff_path = os.path.join(GLYPHS_PATH, f"{tiff_key}.tiff")
-            if os.path.exists(tiff_path):
-                _flush()
-                items.append({'kind': 'img', 'key': tok})
-            # else: silently skip signs with no renderable form
+            return
+        # Try the MdC translation dict for a renderable equivalent (e.g. Y1V→Y1a)
+        v = _MDC_TRANSLATION_DIC.get(tok.upper())
+        if v:
+            tcodes = _RES_CODE_RE.findall(v)
+            if tcodes and all(c in RES_KNOWN_SIGNS for c in tcodes):
+                canvas_run.append(v)
+                return
+        # Unicode sign drawn with the Unicode NewGardiner font, which has
+        # the Unicode 16 extended list the RES fonts lack
+        char = unicode_sign(tok)
+        if char:
+            _flush()
+            items.append({'kind': 'char', 'value': char})
+            return
+        # Image fallback — only if the tiff actually exists (file names are upper case)
+        tiff_key = tok.upper().replace("AA", "J")
+        if os.path.exists(os.path.join(GLYPHS_PATH, f"{tiff_key}.tiff")):
+            _flush()
+            items.append({'kind': 'img', 'key': tok.upper()})
+        # else: silently skip signs with no renderable form
+
+    if mdc:
+        for group in _split_top_level(_mdc_to_res(mdc)):
+            codes = _RES_CODE_RE.findall(group)
+            if codes and all(c in RES_KNOWN_SIGNS for c in codes):
+                canvas_run.append(group)
+            else:
+                for code in codes:
+                    _add_sign(code)
+    else:
+        for tok in gardiner_signs.split():
+            _add_sign(tok)
 
     _flush()
     return items
@@ -469,7 +524,7 @@ def _search_by_translation(query: str, exact: bool) -> list:
     return list(kw_col.aggregate(pipeline))
 
 
-def _search_all(query: str, exact: bool) -> list:
+def _search_all(query: str, exact: bool, sources: list[int] | None = None) -> list:
     col = entries_collection()
     if exact:
         sign_translit = list(
@@ -491,9 +546,9 @@ def _search_all(query: str, exact: bool) -> list:
     seen_ids = {e["_id"] for e in sign_translit}
     translation_results = [e for e in _search_by_translation(query, exact) if e["_id"] not in seen_ids]
     # Return as two groups: sign/translit matches always precede translation-only matches.
-    # _sort_results is applied within each group so ranking stays coherent but a
-    # keyword-only hit can never jump ahead of a direct sign/transliteration match.
-    return _sort_results(sign_translit) + _sort_results(translation_results)
+    # Each group is sorted on its own, so a keyword-only hit can never jump
+    # ahead of a direct sign/transliteration match.
+    return _sort_results(sign_translit) + _sort_by_english(translation_results, query, sources)
 
 
 def _sort_results(results: list) -> list:
@@ -506,6 +561,69 @@ def _sort_results(results: list) -> list:
         return (not has_faulkner, -len(unique_sources), entry.get("Transliteration", ""), entry.get("GardinerSigns", ""))
 
     return sorted(results, key=_key)
+
+
+# Words skipped at the start of a translation, so "to say" and "the house"
+# rank like "say" and "house"
+_LEADING_FILLER = {"a", "an", "the", "to"}
+_WORD_RE = re.compile(r"\w+")
+
+
+def _english_match_rank(text: str, query_words: list[str]) -> tuple:
+    """How well one translation matches, best first:
+    (0,) the translation is just the searched word(s): "food"
+    (1,) it starts with them, then punctuation: "food, fodder", "food (in general)"
+    (2,) it starts with them, then more words: "food offerings"
+    (3, n) a searched word is the n-th word: "life energy gotten from food"
+    """
+    text = text.lower()
+    words = [m for m in _WORD_RE.finditer(text)]
+    while words and words[0].group() in _LEADING_FILLER and len(words) > len(query_words):
+        words.pop(0)
+    if not words:
+        return (4,)
+    n = len(query_words)
+    if [m.group() for m in words[:n]] == query_words:
+        rest = text[words[n - 1].end():].strip()
+        if not rest or (len(words) == n and not rest.strip(".!?")):
+            return (0,)
+        if rest[0] in ",;:(/[.":
+            return (1,)
+        return (2,)
+    keywords = set(query_words)
+    for i, m in enumerate(words):
+        if m.group() in keywords:
+            return (3, i)
+    return (4,)
+
+
+def _sort_by_english(results: list, query: str, sources: list[int] | None = None) -> list:
+    """Order English (translation) matches by (1) the best-matching
+    translation (see _english_match_rank), then (2) how many sources attest
+    the entry. Only translations from the selected sources count, and entries
+    whose match comes only from other sources are dropped."""
+    query_words = _sanitize_keywords(query)
+    while len(query_words) > 1 and query_words[0] in _LEADING_FILLER:
+        query_words.pop(0)
+    source_set = set(sources) if sources else None
+
+    def _key(entry):
+        best = (4,)
+        entry_sources = set()
+        for t in entry.get("Translations", []):
+            names = {m.get("DictionaryName") for m in t.get("TranslationMetadata", [])}
+            if source_set is not None:
+                names &= source_set
+                if not names:
+                    continue
+            entry_sources |= names
+            best = min(best, _english_match_rank(t.get("translation", ""), query_words))
+        return (best, -len(entry_sources), entry.get("Transliteration", ""), entry.get("GardinerSigns", ""))
+
+    keyed = [(_key(e), e) for e in results]
+    if source_set is not None:
+        keyed = [(k, e) for k, e in keyed if k[0] != (4,)]
+    return [e for _, e in sorted(keyed, key=lambda ke: ke[0])]
 
 
 def _filter_by_sources(results: list, sources: list[int]) -> list:
@@ -527,11 +645,11 @@ def conduct_search(search_type: str, query: str, sign_query: str, exact: bool,
         query = _sanitize_transliteration(query)
         results = _sort_results(_search_by_transliteration(query, exact))
     elif search_type == "translation":
-        results = _sort_results(_search_by_translation(query, exact))
+        results = _sort_by_english(_search_by_translation(query, exact), query, selected_sources)
     elif search_type == "gardiner":
         results = _sort_results(_search_by_gardiner(sign_query, exact))
     else:
-        results = _search_all(query, exact)
+        results = _search_all(query, exact, selected_sources)
     if selected_sources is not None:
         results = _filter_by_sources(results, selected_sources)
     return results
@@ -721,6 +839,7 @@ def results():
         truncated=total_original > MAX_RESULTS,
         original_count=total_original,
         unknown_glyphs=UNKNOWN_GLYPHS,
+        unicode_sign=unicode_sign,
         source_filtered=source_filtered,
         source_filter_labels=source_filter_labels,
         convert_gardiner=convert_gardiner,
@@ -744,7 +863,11 @@ def image():
             break
     else:
         return "", 404
-    img = Image.open(path)
+    # The scans are black signs on white: serve them as black with the
+    # whiteness turned into transparency, so they sit on any background
+    gray = Image.open(path).convert("L")
+    img = Image.new("LA", gray.size, 0)
+    img.putalpha(ImageOps.invert(gray))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)

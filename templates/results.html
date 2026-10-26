@@ -49,17 +49,21 @@
                     {% set res_val = result.get('Res') %}
                     {# Identifier used for unknown-glyph lookup: prefer Res/MdC, fall back to Gardiner code #}
                     {% set glyph_id = res_val or mdc or gardiner %}
-                    {% if ' ' not in gardiner and glyph_id in unknown_glyphs %}
+                    {% if ' ' not in gardiner and glyph_id in unknown_glyphs and unicode_sign(gardiner) %}
+                        <span class="hiero-char">{{ unicode_sign(gardiner) }}</span>
+                    {% elif ' ' not in gardiner and glyph_id in unknown_glyphs %}
                         <img src="{{ url_for('image', key=gardiner) }}" alt="{{ gardiner }}" style="max-height:40px; max-width: 36px;" />
                     {% elif res_val %}
                         <canvas class="res">{{ res_val.replace('AV1', 'A100') }}</canvas>
                     {% elif mdc %}
                         <canvas class="res">{{ mdc.replace('AA', 'Aa') }}</canvas>
                     {% else %}
-                        {# Mixed rendering: canvas for RES-known signs, img fallback for unknown ones #}
+                        {# Mixed rendering: canvas for RES-known signs, Unicode or img fallback for unknown ones #}
                         {% for item in gardiner_render_items(gardiner) %}
                             {% if item.kind == 'canvas' %}
                                 <canvas class="res">{{ item.value }}</canvas>
+                            {% elif item.kind == 'char' %}
+                                <span class="hiero-char">{{ item.value }}</span>
                             {% else %}
                                 <img src="{{ url_for('image', key=item.key) }}" alt="{{ item.key }}" style="max-height:40px; max-width: 36px; vertical-align: middle;" />
                             {% endif %}

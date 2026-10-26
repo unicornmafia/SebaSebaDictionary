@@ -321,6 +321,13 @@ textarea {
     .copy-res { opacity: 0.7; }
 }
 
+/* Keep each word's hieroglyphs on one line; the other columns wrap first */
+@media (min-width: 768px) {
+    .results-table > tbody > tr > td[data-label="Hieroglyphs"] {
+        white-space: nowrap;
+    }
+}
+
 /* ---------- Results tables: stack into cards on phones ---------- */
 @media (max-width: 767.98px) {
     .results-table > thead {

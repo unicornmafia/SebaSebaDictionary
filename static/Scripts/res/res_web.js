@@ -63,9 +63,17 @@ function(elem) {
 // Root function for web page.
 ResWeb.init =
 function() {
-	ResWeb();
-	ResWeb.mapSigns();
-	ResWeb.mapTrans();
+	var start = function() {
+		ResWeb();
+		ResWeb.mapSigns();
+		ResWeb.mapTrans();
+	};
+	// fontsLoaded() doesn't check ExtendedGardiner (signs like D115), and the
+	// browser only fetches it once a sign needs it, so load it before drawing
+	if (document.fonts && document.fonts.load)
+		document.fonts.load("50px ExtendedGardiner", "").then(start, start);
+	else
+		start();
 };
 
 // Make canvas, as soon as possible.

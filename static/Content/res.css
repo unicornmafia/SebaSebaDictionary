@@ -14,6 +14,12 @@
 	font-display: swap;
 }
 
+/* NewGardiner with Unicode code points, incl. the Unicode 16 extended list (SIL OFL 1.1) */
+@font-face {
+	font-family: 'HieroglyphicUnicode';
+	src: url('NewGardinerUnicode/NewGardiner.ttf') format('truetype');
+	font-display: swap;
+}
 @font-face {
 	font-family: 'ExtendedGardiner';
 	src: url('ExtendedGardiner.ttf') format('truetype');
@@ -51,6 +57,14 @@ span.hinotes {
 .uni {
 	vertical-align: -10px;
 	font-size: 36px;
+}
+/* Sign the RES font can't draw, shown as a Unicode character */
+.hiero-char {
+	font-family: HieroglyphicUnicode;
+	font-size: 36px;
+	line-height: 1;
+	/* sits on the same baseline as the RES canvases */
+	vertical-align: -5px;
 }
 
 .demo {

@@ -414,7 +414,6 @@ function(context) {
 		this.font = "HieroglyphicPlain";
 		this.charName = this.name.charAt(1);
 	} else if (this.name in this.resContext.extendedPoints) {
-		console.log(this.resContext.extendedPoints[this.name]);
 		this.font = "ExtendedGardiner"
 		this.charName = String.fromCharCode(this.resContext.extendedPoints[this.name]);
 	} else {
