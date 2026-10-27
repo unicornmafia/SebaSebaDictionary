@@ -33,6 +33,8 @@
     <script src="{{ url_for('static', filename='Scripts/select2.js') }}"></script>
     <script src="{{ url_for('static', filename='Scripts/copy_res.js') }}"></script>
     {% block extra_head %}{% endblock %}
+    <!-- Umami visitor analytics (self-hosted, cookie-free) -->
+    <script defer src="https://stats.marshbot.com/script.js" data-website-id="ff484ae5-3e7e-4049-ab1b-1af17892f0ca"></script>
 </head>
 <body class="{% block body_class %}max_width{% endblock %}">
     <div id="outsidescreen">
