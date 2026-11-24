@@ -8,10 +8,10 @@ by translate_tla.py and build_tla_wordlist.py.
 
 Each attested spelling of a TLA lemma becomes one (Transliteration,
 GardinerSigns) pair, merged into an existing entry with the same key or
-created as a new entry. The TLA has no per-word meanings in this dataset, so
-the translation text is the lemma's single-word sentence translations where
-there are any; every TLA translation also carries the shortest example
-sentence and a link to the lemma on the TLA website.
+created as a new entry. The translation text is the lemma's meaning from the
+TLA lemma list (added to the word list by add_tla_meanings.py); every TLA
+translation also carries the shortest example sentence and a link to the lemma
+on the TLA website.
 
 Re-running is safe: all TLA data is removed first, then imported again. The
 KeywordSearch index is rebuilt afterwards.
@@ -84,10 +84,28 @@ def _strip_tla(entry: dict) -> bool:
     return changed
 
 
+# TLA glossing tags for names and titles, shown when a lemma has no dictionary meaning
+NAME_KINDS = {"PERSN": "personal name", "ROYLN": "royal name", "TOPN": "place name",
+              "DIVN": "divine name", "TITL": "title"}
+
+
+def definition(word: dict) -> str:
+    """The lemma's dictionary meaning (see add_tla_meanings.py). Lemmas missing
+    from the dictionary, mostly names, fall back to what single-word sentences
+    were translated as, and the kind of name."""
+    if word.get("meaning"):
+        return word["meaning"]
+    text = "; ".join(word["translations"])
+    kind = NAME_KINDS.get(word["glossing"][0] if word["glossing"] else "")
+    if kind:
+        text = f"{text} ({kind})" if text else f"({kind})"
+    return text
+
+
 def tla_translation(word: dict) -> dict:
     example = word["examples"][0] if word["examples"] else None
     return {
-        "translation": "; ".join(word["translations"]),
+        "translation": definition(word),
         "Example": {
             "transliteration": example["transliteration"],
             # Drop quotes around direct speech; the page adds its own
